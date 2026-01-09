@@ -1,0 +1,26 @@
+{
+  "expo": {
+    "jsEngine": "hermes",
+    "name": "Doctor Booking AI",
+    "slug": "doctor-booking-ai-frontend",
+    "scheme": "doctorbooking",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "updates": {
+      "fallbackToCacheTimeout": 0
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true
+    },
+    "android": {
+      "package": "com.doctorbookingai.app"
+    },
+    "web": {
+      "bundler": "metro"
+    }
+    
+  }
+}

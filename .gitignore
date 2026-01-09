@@ -1,0 +1,14 @@
+# Ignore the node_modules folder
+node_modules/
+# Ignore log files
+*.log
+# Ignore environment variable files
+.env    
+# Ignore build output
+dist/
+build/
+
+# Ignore OS generated files
+%ProgramData%/
+
+.expo/
