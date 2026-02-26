@@ -1,8 +1,37 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { ApiResponse, Appointment, Doctor, User, Category } from '../types';
 
-// Centralized API service with mock backend data. Swap internals to real fetch when backend is ready.
+const IP="172.21.93.40"
+const API_URL=`http://${IP}:3001/api`
+
+
 class ApiService {
+
+  private async request(endpoint: string,options: RequestInit = {}){
+    const token = await this.getToken();
+
+    const headers = {
+      "Content-Type": "application/json",
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      ...options.headers,
+    };
+
+    const res = await fetch(`${API_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.message || "Request failed");
+    }
+
+    return data;
+  }
+
+
+
   private static instance: ApiService;
   private token: string | null = null;
 
@@ -11,10 +40,10 @@ class ApiService {
     return ApiService.instance;
   }
 
-  // Simulate network latency
-  private async simulate<T>(data: T, delay = 400): Promise<ApiResponse<T>> {
-    return new Promise((resolve) => setTimeout(() => resolve({ data }), delay));
-  }
+  // // Simulate network latency
+  // private async simulate<T>(data: T, delay = 400): Promise<ApiResponse<T>> {
+  //   return new Promise((resolve) => setTimeout(() => resolve({ data }), delay));
+  // }
 
   async setToken(token: string | null) {
     this.token = token;
@@ -29,15 +58,17 @@ class ApiService {
     return stored;
   }
 
+
+
   // Mock DB
-  private categories: Category[] = [
-    { id: 'cardio', name: 'Cardiologist' },
-    { id: 'derma', name: 'Dermatologist' },
-    { id: 'neuro', name: 'Neurologist' },
-    { id: 'pedia', name: 'Pediatrician' },
-    { id: 'ortho', name: 'Orthopedic' },
-    { id: 'ent', name: 'ENT' },
-  ];
+  // private categories: Category[] = [
+  //   { id: 'cardio', name: 'Cardiologist' },
+  //   { id: 'derma', name: 'Dermatologist' },
+  //   { id: 'neuro', name: 'Neurologist' },
+  //   { id: 'pedia', name: 'Pediatrician' },
+  //   { id: 'ortho', name: 'Orthopedic' },
+  //   { id: 'ent', name: 'ENT' },
+  // ];
 
   private doctors: Doctor[] = [
     {
@@ -52,6 +83,7 @@ class ApiService {
       experience: 12,
       specialization: ['Cardiac Imaging', 'Interventional Cardiology'],
       clinicAddress: 'HeartCare Clinic, Bandra',
+      phone: '+919876543210',
       profileImageUrl: undefined,
       availability: {
         '2026-01-08': ['09:00', '09:30', '10:00', '11:00', '11:30'],
@@ -101,96 +133,185 @@ class ApiService {
 
   // Public API
   async getCategories() {
-    return this.simulate(this.categories);
+    try {
+      const response = await fetch(`${API_URL}/categories`);
+      
+      if (!response.ok) {
+        return { data: [] as Category[], error: 'Failed to fetch categories' };
+      }
+      
+      const categories = await response.json();
+      return { data: categories as Category[] };
+    } catch (error) {
+      console.error('Get categories error:', error);
+      return { data: [] as Category[], error: 'Network error. Please try again.' };
+    }
   }
 
-  async getDoctorsByCategory(categoryName: string) {
-    const list = this.doctors.filter((d) => d.category === categoryName);
-    return this.simulate(list);
-  }
+async getDoctorsByCategory(categoryName: string) {
+  try {
+    const data = await this.request(
+      `/doctor_by_category?category=${encodeURIComponent(categoryName)}`
+    );
+    console.log(`searching doctors in ${categoryName}`);
 
-  async getDoctor(doctorId: string) {
-    const doc = this.doctors.find((d) => d.id === doctorId);
-    if (!doc) return { data: null as any, error: 'Doctor not found' };
-    return this.simulate(doc);
+    return { data: data as Doctor[] };
+  } catch (err: any) {
+    return { data: [], error: err.message };
   }
+}
+
+
+async getDoctor(doctorId: string) {
+  try {
+    const data = await this.request(`/doctors/${doctorId}`);
+    return { data: data as Doctor };
+  } catch (err: any) {
+    return { data: null as any, error: err.message };
+  }
+}
+
 
   async login(email: string, password: string) {
-    // Accept any non-empty credentials for mock
     if (!email || !password) return { data: null as any, error: 'Invalid credentials' };
-    const user: User = { id: 'u1', name: 'John Doe', email };
-    this.currentUser = user;
-    const token = 'mock-token-123';
-    await this.setToken(token);
-    await AsyncStorage.setItem('user', JSON.stringify(user));
-    return this.simulate({ user, token });
+    
+    try {
+      const response = await fetch(`${API_URL}/user/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { data: null as any, error: data.message || 'Login failed' };
+      }
+      
+      const { user, token } = data;
+      this.currentUser = user;
+      await this.setToken(token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      return { data: { user, token } };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { data: null as any, error: 'Network error. Please try again.' };
+    }
   }
 
   async signup(name: string, email: string, password: string) {
     if (!name || !email || !password) return { data: null as any, error: 'Missing fields' };
-    const user: User = { id: 'u2', name, email };
-    this.currentUser = user;
-    const token = 'mock-token-xyz';
-    await this.setToken(token);
-    await AsyncStorage.setItem('user', JSON.stringify(user));
-    return this.simulate({ user, token });
+    
+    try {
+      const response = await fetch(`${API_URL}/user/signup`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: name, email, password })
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        return { data: null as any, error: data.message || 'Signup failed' };
+      }
+      
+      const { user, token } = data;
+      this.currentUser = user;
+      await this.setToken(token);
+      await AsyncStorage.setItem('user', JSON.stringify(user));
+      return { data: { user, token } };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { data: null as any, error: 'Network error. Please try again.' };
+    }
   }
 
-  async getProfile() {
-    const token = await this.getToken();
-    if (!token) return { data: null as any, error: 'Unauthorized' };
-    if (this.currentUser) return this.simulate(this.currentUser);
-    const raw = await AsyncStorage.getItem('user');
-    const parsed = raw ? (JSON.parse(raw) as User) : null;
-    this.currentUser = parsed;
-    if (!parsed) return { data: null as any, error: 'Unauthorized' };
-    return this.simulate(parsed);
+async getProfile() {
+  try {
+    const data = await this.request(`/user/profile`);
+
+    this.currentUser = data;
+    await AsyncStorage.setItem("user", JSON.stringify(data));
+
+    return { data: data as User };
+  } catch (err: any) {
+    return { data: null as any, error: err.message };
   }
+}
+
 
   async getAppointments() {
-    const token = await this.getToken();
-    if (!token) return { data: null as any, error: 'Unauthorized' };
-    return this.simulate(this.appointments);
+    try {
+      const data = await this.request(`/appointments`);
+      return { data: data as Appointment[] };
+    } catch (err: any) {
+      return { data: [], error: err.message };
+    }
   }
 
-  async bookAppointment(doctorId: string, date: string, timeSlot: string) {
-    const token = await this.getToken();
-    if (!token) return { data: null as any, error: 'Unauthorized' };
-    const doctor = this.doctors.find((d) => d.id === doctorId);
-    if (!doctor) return { data: null as any, error: 'Doctor not found' };
-    const appt: Appointment = {
-      id: 'apt-' + Math.random().toString(36).slice(2, 9),
-      doctorName: doctor.name,
-      category: doctor.category,
-      date,
-      timeSlot,
-      status: 'Confirmed',
-      paymentStatus: 'Pending',
-    };
-    this.appointments.unshift(appt);
-    return this.simulate(appt, 600);
-  }
 
-  async initiatePayment(appointmentId: string) {
-    const token = await this.getToken();
-    if (!token) return { data: null as any, error: 'Unauthorized' };
-    const idx = this.appointments.findIndex((a) => a.id === appointmentId);
-    if (idx === -1) return { data: null as any, error: 'Appointment not found' };
-    this.appointments[idx].paymentStatus = 'Paid';
-    return this.simulate({ success: true }, 800);
-  }
+async bookAppointment(
+  doctorId: string,
+  date: string,
+  timeSlot: string
+  ) {
+    try {
+      const data = await this.request(`/appointments`, {
+        method: "POST",
+        body: JSON.stringify({
+          doctorId,
+          date,
+          timeSlot,
+        }),
+      });
 
-  async triggerAIVoiceForAppointment(appointmentId: string) {
-    const token = await this.getToken();
-    if (!token) return { data: null as any, error: 'Unauthorized' };
-    // Mock: return success as if a call was initiated
-    return this.simulate({ started: true }, 500);
-  }
+      return { data: data as Appointment };
+    } catch (err: any) {
+      return { data: null as any, error: err.message };
+    }
+}
 
-  async triggerAIQuick() {
-    // Quick trigger without auth (e.g., general triage)
-    return this.simulate({ started: true }, 400);
+
+async initiatePayment(appointmentId: string) {
+  try {
+    const data = await this.request(
+      `/payments/${appointmentId}`,
+      { method: "POST" }
+    );
+
+    return { data };
+  } catch (err: any) {
+    return { data: null as any, error: err.message };
   }
+}
+
+
+async triggerAIVoiceForAppointment(appointmentId: string) {
+  try {
+    const data = await this.request(
+      `/ai/call/${appointmentId}`,
+      { method: "POST" }
+    );
+
+    return { data };
+  } catch (err: any) {
+    return { data: null as any, error: err.message };
+  }
+}
+
+async triggerAIQuick() {
+  try {
+    const data = await this.request(
+      `/ai/quick`,
+      { method: "POST" }
+    );
+
+    return { data };
+  } catch (err: any) {
+    return { data: null as any, error: err.message };
+  }
+}
+
 
   async logout() {
     this.currentUser = null;

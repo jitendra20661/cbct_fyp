@@ -5,6 +5,7 @@ import type { Category } from '../types';
 import { api } from '../services/api';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../navigation/HomeStack';
+import { getCategoryIcon } from '../utils/categoryIcons';
 
 export type HomeScreenProps = NativeStackScreenProps<HomeStackParamList, 'Home'>;
 
@@ -35,13 +36,14 @@ const HomeScreen: React.FC<HomeScreenProps> = ({ navigation }) => {
       <Text style={styles.title}> </Text>
       <FlatList
         data={categories}
-        keyExtractor={(i) => i.id}
+        keyExtractor={(i) => (i.id ?? (i as any)._id ?? i.name)}
         numColumns={2}
         columnWrapperStyle={{ justifyContent: 'space-between' }}
         contentContainerStyle={{ paddingBottom: 24, paddingHorizontal: 16 }}
         renderItem={({ item }) => (
           <CategoryCard
             name={item.name}
+            icon={getCategoryIcon(item.name)}
             onPress={() => navigation.navigate('DoctorList', { category: item.name })}
           />
         )}

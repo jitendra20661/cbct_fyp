@@ -1,10 +1,12 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { ActivityIndicator, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import { AuthContext } from '../context/AuthContext';
 import { api } from '../services/api';
 import type { Appointment, User } from '../types';
 
 const ProfileScreen: React.FC = () => {
+  const navigation = useNavigation();
   const { user, token, logout } = useContext(AuthContext);
   const [loading, setLoading] = useState(false);
   const [profile, setProfile] = useState<User | null>(null);
@@ -25,9 +27,12 @@ const ProfileScreen: React.FC = () => {
     return (
       <SafeAreaView style={styles.center}>
         <Text style={styles.title}>Profile</Text>
-        <Text style={{ paddingHorizontal: 16, textAlign: 'center', color: '#374151' }}>
+        <Text style={{ paddingHorizontal: 16, textAlign: 'center', color: '#374151', marginBottom: 24 }}>
           Please log in to view your profile and booking summary.
         </Text>
+        <TouchableOpacity onPress={() => navigation.navigate('Login')} style={styles.loginBtn}>
+          <Text style={styles.loginText}>Login</Text>
+        </TouchableOpacity>
       </SafeAreaView>
     );
   }
@@ -70,7 +75,7 @@ const ProfileScreen: React.FC = () => {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#F9FAFB' },
-  center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', paddingHorizontal: 16 },
   title: { fontSize: 22, fontWeight: '800', color: '#111827', marginBottom: 8 },
   avatar: { width: 56, height: 56, borderRadius: 28, backgroundColor: '#E5E7EB' },
   name: { fontSize: 18, fontWeight: '800', color: '#111827' },
@@ -78,6 +83,8 @@ const styles = StyleSheet.create({
   summary: { flexDirection: 'row', gap: 12, marginTop: 20 },
   summaryItem: { flex: 1, backgroundColor: '#fff', padding: 16, borderRadius: 12, borderWidth: 1, borderColor: '#eee' },
   summaryNum: { fontSize: 20, fontWeight: '800', color: '#111827' },
+  loginBtn: { backgroundColor: '#3B82F6', paddingHorizontal: 32, paddingVertical: 12, borderRadius: 8 },
+  loginText: { color: '#fff', fontWeight: '800', fontSize: 16 },
   logoutBtn: { marginTop: 24, backgroundColor: '#EF4444', height: 48, borderRadius: 12, alignItems: 'center', justifyContent: 'center' },
   logoutText: { color: '#fff', fontWeight: '800' },
 });

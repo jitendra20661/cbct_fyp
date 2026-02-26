@@ -3,13 +3,32 @@ const mongoose = require('mongoose');
 const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
+const fs = require('fs');
 require('dotenv').config();
+const Doctor = require('./models/Doctor')
+const Category = require('./models/Category')
+const connectDB = require('./config/db')
+const userRouter = require('./routes/userRoutes');
+const { log } = require('console');
+
+// Create uploads directory if it doesn't exist
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
 
 const app = express();
 const PORT = process.env.PORT || 3001;
+connectDB()
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*', // Allow all origins for development
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express.json());
 app.use(express.static('public'));
 app.use('/uploads', express.static('uploads'));
@@ -17,7 +36,7 @@ app.use('/uploads', express.static('uploads'));
 // Configure multer for file uploads
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/');
+    cb(null, uploadsDir);
   },
   filename: (req, file, cb) => {
     cb(null, Date.now() + '-' + file.originalname);
@@ -25,71 +44,7 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage });
 
-// MongoDB Connection
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/ai_receptionist';
 
-mongoose.connect(MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => console.log('Connected to MongoDB'))
-.catch((err) => console.error('MongoDB connection error:', err));
-
-// Category Schema
-const categorySchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true
-  },
-  description: String,
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Category = mongoose.model('Category', categorySchema);
-
-// Doctor Schema
-const doctorSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true
-  },
-  specialization: {
-    type: String,
-    required: true
-  },
-  category: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'Category',
-    required: true
-  },
-  categoryName: String,
-  experience: {
-    type: Number,
-    required: true
-  },
-  qualification: String,
-  email: String,
-  phone: String,
-  image: String,
-  availability: {
-    type: [String],
-    default: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
-  },
-  rating: {
-    type: Number,
-    default: 0
-  },
-  createdAt: {
-    type: Date,
-    default: Date.now
-  }
-});
-
-const Doctor = mongoose.model('Doctor', doctorSchema);
 
 // API Routes
 
@@ -124,8 +79,9 @@ app.delete('/api/categories/:id', async (req, res) => {
   }
 });
 
-// Get all doctors
-app.get('/api/doctors', async (req, res) => {
+// Doctor Routes
+
+app.get('/api/doctors', async (req, res) => {   //All doctors
   try {
     const doctors = await Doctor.find().populate('category').sort({ createdAt: -1 });
     res.json(doctors);
@@ -173,10 +129,51 @@ app.delete('/api/doctors/:id', async (req, res) => {
   }
 });
 
+// Get doctors by category
+app.get('/api/doctor_by_category', async (req, res) => {
+  try {
+    const { category } = req.query;
+    console.log("query param: ",category);
+    
+    if (!category) {
+      const doctors = await Doctor.find().populate('category').sort({ createdAt: -1 });
+      return res.json(doctors);
+    }
+    
+    // Search by category name (case-insensitive)
+    const doctors = await Doctor.find({
+      categoryName: { $regex: category, $options: 'i' }
+    }).populate('category').sort({ createdAt: -1 });
+    
+    res.json(doctors);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching doctors', error: error.message });
+  }
+});
+
+// Get doctor by ID
+app.get('/api/doctors/:id', async (req, res) => {
+  try {
+    const doctor = await Doctor.findById(req.params.id).populate('category');
+    console.log("req param: ",req.params.id);
+
+    if (!doctor) {
+      return res.status(404).json({ message: 'Doctor not found' });
+    }
+    res.json(doctor);
+  } catch (error) {
+    res.status(500).json({ message: 'Error fetching doctor', error: error.message });
+  }
+});
+
+
+app.use('/api/user', userRouter)
+
 // Serve the admin panel
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
+
 
 app.listen(PORT, () => {
   console.log(`Admin server running on http://localhost:${PORT}`);

@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, Alert, FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, FlatList, Linking, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import type { NativeStackScreenProps } from '@react-navigation/native-stack';
 import type { HomeStackParamList } from '../navigation/HomeStack';
 import { api } from '../services/api';
@@ -50,27 +50,34 @@ const DoctorDetailScreen: React.FC<DoctorDetailScreenProps> = ({ route, navigati
       return;
     }
 
-    try {
-      setBooking({ busy: true, step: 'Creating appointment' });
-      const apptRes = await api.bookAppointment(doctor.id, selectedDate, selectedTime);
-      if (apptRes.error) throw new Error(apptRes.error);
+    // try {
+    //   setBooking({ busy: true, step: 'Creating appointment' });
+    //   const apptRes = await api.bookAppointment(doctor.id, selectedDate, selectedTime);
+    //   if (apptRes.error) throw new Error(apptRes.error);
 
-      setBooking({ busy: true, step: 'Processing payment' });
-      const payRes = await api.initiatePayment(apptRes.data.id);
-      if (payRes.error) throw new Error(payRes.error);
+    //   setBooking({ busy: true, step: 'Processing payment' });
+    //   const payRes = await api.initiatePayment(apptRes.data.id);
+    //   if (payRes.error) throw new Error(payRes.error);
 
-      setBooking({ busy: true, step: 'Starting AI voice agent' });
-      const aiRes = await api.triggerAIVoiceForAppointment(apptRes.data.id);
-      if (aiRes.error) throw new Error(aiRes.error);
+    //   setBooking({ busy: true, step: 'Starting AI voice agent' });
+    //   const aiRes = await api.triggerAIVoiceForAppointment(apptRes.data.id);
+    //   if (aiRes.error) throw new Error(aiRes.error);
 
-      Alert.alert('Success', 'Your appointment is confirmed and AI agent has been initiated.');
-      setBooking({ busy: false });
-      // Optionally navigate to Appointments tab
-      navigation.getParent()?.navigate?.('Appointments');
-    } catch (e: any) {
-      Alert.alert('Error', e?.message ?? 'Something went wrong');
-      setBooking({ busy: false });
-    }
+    //   Alert.alert('Success', 'Your appointment is confirmed and AI agent has been initiated.');
+    //   setBooking({ busy: false });
+    //   // Optionally navigate to Appointments tab
+    //   navigation.getParent()?.navigate?.('Appointments');
+    // } catch (e: any) {
+    //   Alert.alert('Error', e?.message ?? 'Something went wrong');
+    //   setBooking({ busy: false });
+    // }
+        // Make phone call to clinic/doctor
+    const phoneNumber = doctor.phone || '+918080419583'; // Use doctor's phone or default
+    const telUrl = `tel:${phoneNumber}`;
+    
+    Linking.openURL(telUrl).catch(() =>
+      Alert.alert('Error', 'Unable to make a call. Please try again.')
+    );
   };
 
   if (loading || !doctor) {
@@ -98,7 +105,7 @@ const DoctorDetailScreen: React.FC<DoctorDetailScreenProps> = ({ route, navigati
             </View>
 
             <Text style={styles.sectionTitle}>Specializations</Text>
-            <Text>{doctor.specialization.join(', ')}</Text>
+            {/* <Text>{doctor.specialization.join(', ')}</Text> */}
 
             <Text style={[styles.sectionTitle, { marginTop: 16 }]}>Availability</Text>
             <FlatList
@@ -118,7 +125,7 @@ const DoctorDetailScreen: React.FC<DoctorDetailScreenProps> = ({ route, navigati
               ListEmptyComponent={<Text>No available dates.</Text>}
             />
 
-            <View style={styles.slotsWrap}>
+            {/* <View style={styles.slotsWrap}>
               {slots?.map((s) => (
                 <TouchableOpacity
                   key={s}
@@ -129,7 +136,7 @@ const DoctorDetailScreen: React.FC<DoctorDetailScreenProps> = ({ route, navigati
                 </TouchableOpacity>
               ))}
               {!slots?.length && <Text style={{ color: '#6B7280' }}>No time slots available.</Text>}
-            </View>
+            </View> */}
 
             <TouchableOpacity
               onPress={onBook}

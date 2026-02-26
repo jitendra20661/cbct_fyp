@@ -23,9 +23,9 @@ const DoctorCard: React.FC<DoctorCardProps> = ({ doctor, onPress }) => {
         <Text style={styles.meta}>• {doctor.totalBookings} bookings</Text>
       </View>
 
-      <Text style={styles.specialization} numberOfLines={1}>
-        {doctor.specialization.join(', ')}
-      </Text>
+      {/* <Text style={styles.specialization} numberOfLines={1}>
+        {(doctor.specialization ?? []).join(', ') || 'Specialization not available'}
+      </Text> */}
 
       {doctor.availability && (
         <Text style={styles.slots} numberOfLines={1}>

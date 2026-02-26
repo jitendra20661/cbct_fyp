@@ -1,15 +1,19 @@
 import React from 'react';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import MaterialIcons from 'react-native-vector-icons/MaterialIcons';
 
 export type CategoryCardProps = {
   name: string;
+  icon?: string;
   onPress?: () => void;
 };
 
-const CategoryCard: React.FC<CategoryCardProps> = ({ name, onPress }) => {
+const CategoryCard: React.FC<CategoryCardProps> = ({ name, icon = 'local-hospital', onPress }) => {
   return (
     <TouchableOpacity activeOpacity={0.8} onPress={onPress} style={styles.card}>
-      <View style={styles.iconPlaceholder} />
+      <View style={styles.iconContainer}>
+        <MaterialIcons name={icon} size={40} color="#4F46E5" />
+      </View>
       <Text style={styles.label} numberOfLines={2}>
         {name}
       </Text>
@@ -35,12 +39,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  iconPlaceholder: {
-    width: 48,
-    height: 48,
+  iconContainer: {
+    width: 56,
+    height: 56,
     borderRadius: 12,
     backgroundColor: '#EEF2FF',
     marginBottom: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   label: {
     textAlign: 'center',

@@ -1,5 +1,6 @@
 export type Doctor = {
-  id: string;
+  id?: string;
+  _id?: string;
   name: string;
   category: string;
   location: string;
@@ -10,6 +11,7 @@ export type Doctor = {
   experience: number; // years
   specialization: string[];
   clinicAddress: string;
+  phone?: string; // doctor/clinic phone number
   profileImageUrl?: string;
   availability?: Record<string, string[]>; // ISO date (YYYY-MM-DD) => array of time slot labels
 };

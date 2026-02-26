@@ -30,10 +30,13 @@ const DoctorListScreen: React.FC<DoctorListScreenProps> = ({ route, navigation }
       ) : (
         <FlatList
           data={doctors}
-          keyExtractor={(i) => i.id}
+          keyExtractor={(i) => (i.id ?? i._id ?? '')}
           contentContainerStyle={{ padding: 16 }}
           renderItem={({ item }) => (
-            <DoctorCard doctor={item} onPress={() => navigation.navigate('DoctorDetail', { doctorId: item.id })} />
+            <DoctorCard
+              doctor={item}
+              onPress={() => navigation.navigate('DoctorDetail', { doctorId: item.id ?? item._id ?? '' })}
+            />
           )}
           ListEmptyComponent={
             <View style={styles.center}> 
